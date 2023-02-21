@@ -1,0 +1,220 @@
+
+
+ArrayBag is essentially a wrapper class for an array; a wrapper class is a class
+that provides very similar yet more broad functionality to the type being wrapped;
+
+thus, ArrayBag declares an array of size n and most functionality revolves around this array;
+
+1.
+
+    public int size()
+    {
+        return items.length;
+    }
+
+    // you can be real efficient and write it like this:
+    // in general, accessors can be written in one line;
+    // note, this is an accessor because no fields are modified when the method
+    // terminates;
+
+    public int size() { return items.length; }
+
+2.
+
+    //
+    // there are many ways to search a random-access sequence;
+    // in fact, there are whole textbooks dedicated to this;
+    // let us use a basic search: linear search;
+    // we start at items[0] and iterate to items[n-1], n=items.length;
+    // for each iteration, we check the value of items[j] and adjust count accordingly;
+    //
+    //
+    //
+
+    public int count(Object item)
+    {
+        int c = 0;
+
+        for ( int j=0; j<items.length; ++j )
+        {
+            //
+            // you may be tempted to write items[j] == item; you would be sorely mistaken...;
+            // two distinct objects will never satisfy this condition even if they are equal;
+            // this is because objects occupy distinct locations in memory; two objects may be equal
+            // but their locations are not!
+            //
+            // equals compares the instance variables of both objects (this is not 100% true);
+            // this is how equality is determined; e.g., x=Point(5,10) equals y=Point(5,10)
+            // because the coordinates are equal-- x != y because the objects are distinct
+            //
+            if ( items[j].equals(item) )
+            {
+                c += 1;
+            }
+        }
+        return c;
+    }
+
+3.
+
+    //
+    // from the problem definition, we do not want to erase any array elements;
+    // thus, we check numItems and determine if such a reduction can occur;
+    //
+    // unfortunately, we create a new array that is shorter than before
+    // which is kind of pointless considering the original array could hold a shorter
+    // array and we could just keep track of the array "size" with an integer
+    //
+    public boolean reduceSize(int decrease)
+    {
+        if ( decrease < 0 )
+        {
+            throw new IllegalArgumentException();
+        }
+        else if ( decrease == 0 )
+        {
+            return true;
+        }
+
+        if ( items.length-decrease < numItems )
+        {
+            //
+            // reducing arrray items by decrease would cause
+            // numItems of elements to no longer fit
+            //
+            return false;
+        }
+
+        Object[] reduced = new Object[items.length-decrease];
+        // set every element of reduced to a value by copying from items
+        for ( int j=0; j<reduced.length; ++j )
+        {
+            reduced[j] = items[j];
+        }
+        return true;
+    }
+4.
+    //
+    // x = the ArrayBag instance whose equals method is called
+    // y = the other ArrayBag instance
+    //
+    // equality can mean a lot of different things depending on types;
+    // formally, a Type T can be defined as a set of properties and
+    // a sequence assigning each property a value;
+    //
+    // what are our properties here? x[0,1,...,x.length-1] has to have the same
+    // values as y[0,1,...,y.length-1]; in other words, the arrays must be permutations
+    // of each other:
+    // permutation ( [1,3,8,4], [3,8,4,1] ) == T
+    //
+    // to verify that they are permutations, we can make a simple algorithm;
+    //
+    // it works like this:
+    // 1. between x and y gather all the distinct (non-equal) elements
+    // 2. check that there are the same number of these elements in both x and y
+    // 3. proved
+    //
+    //
+    public boolean equals(ArrayBag y)
+    {
+        ArrayBag x = this;
+
+        if ( y == null )
+        {
+            return false;
+        }
+        if ( x.numItems() != y.numItems() )
+        {
+            return false;
+        }
+
+        // first, we construct an ArrayBag unique;
+        // unique will only have unique values of ArrayBag x
+        ArrayBag unique = new ArrayBag(x.numItems());
+        for ( Object o: x.toArray() )
+        {
+            if ( !unique.contains(o) )
+            {
+                unique.add(o);
+            }
+        }
+
+        //
+        // however, ArrayBag y may not be equal and thus have values distinct to those in x
+        //
+        for ( Object o: y.toArray() )
+        {
+            if ( !unique.contains(o) )
+            {
+                unique.add(o);
+            }
+        }
+
+        // now we have all the unique values in both x and y; for every value, check whether both x and y have the same amount;
+        // if this holds for all values in unique, x and y are permutations
+        for ( Object o: unique.toArray() )
+        {
+            if ( x.count(o) != y.count(o) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    5.
+    //
+    // basically, we are doing the difference operation on two sets;
+    //
+    // Set A = {3,5,7}
+    // Set B = {5,7}
+    // A\B = {3}
+    //
+    // mathematically, sets cannot contain duplicate elements; so we first
+    // create new ArrayBag objects that satisfy this property and then we
+    // implement the set difference operator (it's trivial)
+    //
+    //
+    public ArrayBag subtract(ArrayBag other)
+    {
+        if ( other == null )
+        {
+            throw new NullPointerException();
+        }
+
+        ArrayBag set_A = new ArrayBag(numItems());
+        ArrayBag set_B = new ArrayBag(other.numItems());
+
+        // in the edge case, all numItems elements are unique and this ArrayBag
+        // was already a set
+        for ( Object o: toArray() )
+        {
+            if ( !set_A.contains(o) )
+            {
+                set_A.add(o);
+            }
+        }
+
+        // same exact thing for set_B
+        for ( Object o: other.toArray() )
+        {
+            if ( !set_B.contains(o) )
+            {
+                set_B.add(o);
+            }
+        }
+
+        // remove all elements of set_B from set_A;
+        // note: you cannot remove an element from set_A that does not exist in set_A;
+        // those elements are essentially ignored;
+        // for more info, look up set difference operation
+        for ( Object o: set_B.toArray() )
+        {
+            if ( set_A.contains(o) )
+            {
+                set_A.remove(o);
+            }
+        }
+
+        return set_A;
+    }
